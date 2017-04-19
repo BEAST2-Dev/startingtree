@@ -156,7 +156,7 @@
 
 
     <run spec="beast.evolution.tree.StartingTree" id="startingtree">
-        <startingTree spec="beast.util.ClusterTree" id="Tree.t:h3n2" clusterType="neighborjoining" taxa="@h3n2"/>
+        <init spec="beast.util.ClusterTree" id="Tree.t:h3n2" clusterType="neighborjoining" taxa="@h3n2"/>
 
     </run>
 

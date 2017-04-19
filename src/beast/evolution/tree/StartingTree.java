@@ -16,7 +16,7 @@ import java.io.PrintStream;
  */
 public class StartingTree extends beast.core.Runnable {
 
-    final public Input<ClusterTree> startingTreeInput = new Input<>("startingTree", "starting tree", Validate.REQUIRED);
+    final public Input<ClusterTree> startingTreeInput = new Input<>("init", "starting tree from ClusterTree", Validate.REQUIRED);
 
     final public Input<String> outputFileNameInput = new Input<>( "outputFileName",
             "If provided, starting tree is written to this file rather than to standard out.");

@@ -156,7 +156,9 @@
 
 
     <run spec="beast.evolution.tree.StartingTree" id="startingtree">
-        <startingTree spec="beast.util.ClusterTree" id="Tree.t:h3n2" clusterType="neighborjoining2" taxa="@h3n2">
+            
+        <init spec="beast.util.ClusterTree" id="Tree.t:h3n2" clusterType="neighborjoining2" taxa="@h3n2">
+
             <trait id="dateTrait.t:h3n2" spec="beast.evolution.tree.TraitSet" traitname="date">
                 EU857024_HongKong_2004.51506849=2004.51506849,
 CY039071_HongKong_2005.32054795=2005.32054795,
@@ -308,12 +310,13 @@ CY008620_NewZealand_2005.66849315=2005.66849315,
 CY012648_NewZealand_2003.4109589=2003.4109589,
 CY007203_NewZealand_2003.53972603=2003.53972603,
 CY007507_NewZealand_2004.73424658=2004.73424658                
-                <taxa id="TaxonSet.h3n2" spec="TaxonSet">
+               <taxa id="TaxonSet.h3n2" spec="TaxonSet">
                     <alignment idref="h3n2"/>
                 </taxa>
             </trait>
-
-        </startingTree>
+            
+        </init>
+        
     </run>
 
 </beast>

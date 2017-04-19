@@ -8,7 +8,15 @@ import beast.util.ClusterTree;
  *
  * @author Walter Xie
  */
-public class NJTreeDater extends ClusterTree {
+public class TreeDater extends ClusterTree {
+
+
+    public void initAndValidate() {
+        super.initAndValidate();
+
+
+
+    }
 
 
 

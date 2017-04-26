@@ -16,6 +16,10 @@ public class FlexibleTree extends Tree {
         super(newick);
     }
 
+    public FlexibleTree(final Node rootNode) {
+        super(rootNode);
+    }
+
     public void setAllBranchLengths() {
         allBranchLengths = getAllBranchLengths(getRoot(), getNodeCount());
     }
@@ -89,9 +93,9 @@ public class FlexibleTree extends Tree {
      *                and its parent node to define the new root, such as 0.5.
      */
     public void changeRootTo(Node node, double propLen) {
-//        // restrict to binary tree
-//        if (!TreeUtils.isBinary(this))
-//            throw new IllegalArgumentException("changeRootTo is only available to binary tree !");
+        // restrict to binary tree
+        if (!TreeUtils.isBinary(this))
+            throw new IllegalArgumentException("changeRootTo is only available to binary tree !");
 
         Node parent = node.getParent();
         if (parent == null || parent == root) {
@@ -181,21 +185,21 @@ public class FlexibleTree extends Tree {
             // First remove child from the root
             node.removeChild(child);
 
-//            if (node.getChildCount() > 1) {
-//                throw new IllegalArgumentException("Trees must be binary");
-//            }
-//
-//            Node tmp = node.getChild(0);
-//            node.removeChild(tmp);
-//            child.addChild(tmp);
-//            tmp.setHeight(tmp.getHeight() - heightDiff);
-
-
-// todo can't remove from list if browsing it with "for each" loop
+            // can't remove from list if browsing it with "for each" loop
             List<Node> children = new ArrayList<>(node.getChildren());
 
-            for (int i=0; i<children.size(); i++) {
-                Node tmp = children.get(i);
+            int numChild = children.size();
+            if (numChild > 1) {
+                // todo insert new internal node in the same position of old root for > 2 children
+//                Node newInternalNode = new Node();
+                for (int i=0; i<numChild; i++) {
+                    Node tmp = children.get(i);
+                    node.removeChild(tmp);
+                    child.addChild(tmp);
+                    setLength(tmp, getLength(tmp) + getLength(child));
+                }
+            } else {
+                Node tmp = children.get(0);
                 node.removeChild(tmp);
                 child.addChild(tmp);
                 setLength(tmp, getLength(tmp) + getLength(child));
@@ -205,6 +209,49 @@ public class FlexibleTree extends Tree {
     }
 
 
+    /**
+     * replace BEAST2 <code>String toNewick(boolean onlyTopology)</code>
+     * in <code>Node</code>, which is restricted to binary tree only.
+     *
+     * @param onlyTopology  if true, only print topology
+     * @param printInternalNodes  if true, print internal nodes
+     * @return no ; in the end
+     */
+    public String toNewick(Node node, boolean onlyTopology, boolean printInternalNodes) {
+        final StringBuilder buf = new StringBuilder();
 
+        List<Node> children = node.getChildren();
+        for (int i = 0; i < children.size(); i++) {
+            Node child = children.get(i);
+            if (i == 0) {
+                buf.append("(");
+                buf.append(toNewick(child, onlyTopology, printInternalNodes));
+            } else {
+                buf.append(',');
+                buf.append(toNewick(child, onlyTopology, printInternalNodes));
+            }
+            // print label
+            if (child.isLeaf() || printInternalNodes) {
+                if (child.getID() == null) {
+                    buf.append(child.getNr());
+                } else {
+                    buf.append(child.getID());
+                }
+            }
+            if (!onlyTopology) {
+                buf.append(child.getNewickMetaData());
+                buf.append(":").append(child.getLength());
+            }
+            // close "("
+            if (i == children.size() -1) {
+                buf.append(")");
+            }
+        }
+        return buf.toString();
+    }
+
+    public String toNewick() {
+        return this.toNewick(getRoot(), false, false) + ";";
+    }
 
 }

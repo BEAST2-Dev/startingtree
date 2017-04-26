@@ -40,19 +40,24 @@ public class StartingTree extends beast.core.Runnable {
 
 
     public void run() throws Exception {
-        printTree();
+        FlexibleTree flexibleTree = new FlexibleTree(startingTree.getRoot());
+
+
+        printTree(flexibleTree);
 
 
     }
 
-    private void printTree() throws FileNotFoundException {
+    private void printTree(FlexibleTree flexibleTree) throws FileNotFoundException {
         // Write output to stdout or file
         PrintStream pstream;
         if (outputFileName == null)
             pstream = System.out;
         else
             pstream = new PrintStream(outputFileName);
-        pstream.println(startingTree.getRoot().toNewick());
+
+//        pstream.println(startingTree.getRoot().toNewick());
+        pstream.println(flexibleTree.toNewick());
     }
 
 

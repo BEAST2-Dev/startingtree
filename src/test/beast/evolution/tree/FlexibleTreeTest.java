@@ -10,11 +10,11 @@ import junit.framework.TestCase;
 public class FlexibleTreeTest extends TestCase {
     String[] trees = new String[]{
             "((((A:1.0,B:1.0):1.0,C:2.0):2.0,D:3.0):3.0,E:5.0);", // binary tree
-
+//            "(A:0.1,B:0.2,(C:0.3,D:0.4):0.5);" // multifurcating tree
     };
     String[] newTrees = new String[]{
-            "(C:1.0,((A:1.0,B:1.0):1.0,(D:3.0,E:8.0):2.0):1.0):0.0;", // binary tree
-
+            "(C:1.0,((A:1.0,B:1.0):1.0,(D:3.0,E:8.0):2.0):1.0);", // binary tree
+            ""
     };
 
     public void testChangeRootTo() throws Exception {
@@ -26,12 +26,12 @@ public class FlexibleTreeTest extends TestCase {
 
             FlexibleTree flexibleTree = new FlexibleTree(tree);
 
-            System.out.println(flexibleTree.getRoot().toNewick());
+            System.out.println(flexibleTree.toNewick());
 
             // set new root between C and its parent with half length each side
             Node newRoot = flexibleTree.getNode(2);
             flexibleTree.changeRootTo(newRoot, 0.5);
-            String newTree = flexibleTree.getRoot().toNewick();
+            String newTree = flexibleTree.toNewick();
 
             System.out.println(newTree);
 

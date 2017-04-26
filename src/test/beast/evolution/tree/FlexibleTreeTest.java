@@ -13,7 +13,7 @@ public class FlexibleTreeTest extends TestCase {
 
     };
     String[] newTrees = new String[]{
-            "(C:2.0,((A:1.0,B:1.0):1.0,(D:3.0,E:5.0):3.0):2.0):0.0;", // binary tree
+            "(C:1.0,((A:1.0,B:1.0):1.0,(D:3.0,E:8.0):2.0):1.0):0.0;", // binary tree
 
     };
 

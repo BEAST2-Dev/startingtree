@@ -33,6 +33,11 @@ public class FlexibleTree extends Tree {
         return allBranchLengths[nodeNr];
     }
 
+    public void setLength(Node node, double branchLength) {
+        int nodeNr = node.getNr();
+        allBranchLengths[nodeNr] = branchLength;
+    }
+
     /**
      * Get all branch lengths of sub/tree.
      * If lengths[nodeNr] == 0, then either is root or not child node
@@ -41,7 +46,7 @@ public class FlexibleTree extends Tree {
      * @param maxNr the max index of all nodes, such as <code>getNodeCount()</code>
      * @return
      */
-    protected double[] getAllBranchLengths(final Node node, int maxNr) {
+    private double[] getAllBranchLengths(final Node node, int maxNr) {
         double[] lengths = new double[maxNr];
         List<Node> allChildNodes = node.getAllChildNodes();
         for (Node child : allChildNodes) {
@@ -73,43 +78,6 @@ public class FlexibleTree extends Tree {
         } else return node.getHeight();
     }
 
-    /**
-     * Set the node heights from the given branch lengths.
-     */
-    protected void setNodeHeightsByLengths() {
-
-        nodeLengthsToHeights(getRoot(), 0.0);
-
-        double maxHeight = FlexibleTree.getMaxNodeHeight(getRoot());
-
-        for (int i = 0; i < getNodeCount(); i++) {
-            Node node = getNode(i);
-            // Set the node heights to the reversed heights
-            node.setHeight(maxHeight - node.getHeight());
-        }
-
-    }
-
-    /**
-     * Set the node heights from the current node branch lengths.
-     * Actually sets distance from root so the heights then need to be reversed.
-     */
-    private void nodeLengthsToHeights(Node node, double height) {
-
-        double newHeight = height;
-
-        // getLength call setAllBranchLengths() in the first time
-        if (getLength(node) > 0.0)
-            newHeight += getLength(node);
-
-        node.setHeight(newHeight);
-
-        for (Node child : node.getChildren()) {
-            nodeLengthsToHeights(child, newHeight);
-        }
-
-    }
-
 
     /**
      * Re-root the tree on the branch above the given <code>node</code>
@@ -121,9 +89,9 @@ public class FlexibleTree extends Tree {
      *                and its parent node to define the new root, such as 0.5.
      */
     public void changeRootTo(Node node, double propLen) {
-        // restrict to binary tree
-        if (!TreeUtils.isBinary(this))
-            throw new IllegalArgumentException("changeRootTo is only available to binary tree !");
+//        // restrict to binary tree
+//        if (!TreeUtils.isBinary(this))
+//            throw new IllegalArgumentException("changeRootTo is only available to binary tree !");
 
         Node parent = node.getParent();
         if (parent == null || parent == root) {
@@ -146,10 +114,51 @@ public class FlexibleTree extends Tree {
         parent.removeChild(node);
         getRoot().addChild(node);
         getRoot().addChild(parent);
+        // adjust lengths for children of new root
+        double nodeToParent = getLength(node);
+        // setLength change getLength(node)
+        setLength(node, nodeToParent * propLen);
+        setLength(parent, nodeToParent * (1 - propLen));
 
-        setNodeHeightsByLengths();
+        setNodeHeightsByLengths(node, parent, propLen);
 
         hasStartedEditing = false; // todo is it correct to use restore()? no proposal
+    }
+
+    /**
+     * Set the node heights from the given branch lengths.
+     */
+    private void setNodeHeightsByLengths(Node child1, Node child2, double propLen) {
+
+        nodeLengthsToHeights(getRoot(), 0.0);
+
+        double maxHeight = FlexibleTree.getMaxNodeHeight(getRoot());
+
+        for (int i = 0; i < getNodeCount(); i++) {
+            Node node = getNode(i);
+            // Set the node heights to the reversed heights
+            node.setHeight(maxHeight - node.getHeight());
+        }
+
+    }
+
+    /**
+     * Set the node heights from the current node branch lengths.
+     * Actually sets distance from root so the heights then need to be reversed.
+     */
+    private void nodeLengthsToHeights(Node node, double height) {
+
+        // getLength call setAllBranchLengths() in the first time
+        double branchLength = getLength(node);
+        if (branchLength > 0.0)
+            height += branchLength;
+
+        node.setHeight(height);
+
+        for (Node child : node.getChildren()) {
+            nodeLengthsToHeights(child, height);
+        }
+
     }
 
     /**
@@ -165,7 +174,7 @@ public class FlexibleTree extends Tree {
             if (child != null) {
                 node.removeChild(child);
                 child.addChild(node);
-//                node.setLength(child.getLength());
+                setLength(node, getLength(child));
             }
 
         } else {
@@ -184,12 +193,13 @@ public class FlexibleTree extends Tree {
 
 // todo can't remove from list if browsing it with "for each" loop
             List<Node> children = new ArrayList<>(node.getChildren());
+
             for (int i=0; i<children.size(); i++) {
                 Node tmp = children.get(i);
                 node.removeChild(tmp);
                 child.addChild(tmp);
-//                tmp.setLength(tmp.getLength() + child.getLength());
-            } // todo check if correct for > 2 children in old root
+                setLength(tmp, getLength(tmp) + getLength(child));
+            }
         }
 
     }

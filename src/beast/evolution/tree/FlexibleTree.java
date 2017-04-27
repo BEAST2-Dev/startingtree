@@ -93,7 +93,7 @@ public class FlexibleTree extends Tree {
      *                and its parent node to define the new root, such as 0.5.
      */
     public void changeRootTo(Node node, double propLen) {
-        // restrict to binary tree
+        // todo remove restriction to binary tree
         if (!TreeUtils.isBinary(this))
             throw new IllegalArgumentException("changeRootTo is only available to binary tree !");
 

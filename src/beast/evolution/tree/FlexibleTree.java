@@ -9,11 +9,11 @@ import java.util.List;
 public class FlexibleTree extends Tree {
 
     // Tree class does not support setLength
-    double[] allBranchLengths; // index is Nr
+    protected double[] allBranchLengths; // index is Nr
 
 
     public FlexibleTree(final String newick) {
-        super(newick);
+        super(newick, false);
     }
 
     public FlexibleTree(final Node rootNode) {
@@ -67,7 +67,7 @@ public class FlexibleTree extends Tree {
     /**
      * Get the maximum node height of the sub/tree including given <code>node</code>
      *
-     * @param node
+     * @param node the root of the given tree or subtree
      * @return
      */
     public static double getMaxNodeHeight(Node node) {
@@ -88,7 +88,7 @@ public class FlexibleTree extends Tree {
      * with the given new root.
      * <code>len(node, new_root) = len(node, parent) * propLen </code>
      *
-     * @param node given node
+     * @param node the new root
      * @param propLen the proportion of the branch length between <code>node</code>
      *                and its parent node to define the new root, such as 0.5.
      */
@@ -254,4 +254,66 @@ public class FlexibleTree extends Tree {
         return this.toNewick(getRoot(), false, false) + ";";
     }
 
+    public boolean isRoot(Node node) {
+        return (node == getRoot());
+    }
+
+
+    //++++++++ the sum of squared distances ++++++++
+
+    /**
+     * Calculate the sum of squared distances of branch length (distance)
+     * given a tree or subtree <code>node</code>.
+     *
+     * @return the sum of squared residuals
+     */
+    public double getSumOfSquaredDistance() {
+        return this.getSumOfSquaredDistances(getRoot());
+    }
+
+    /**
+     * Post order traversal to calculate the sum of squared distances of branch length (distance)
+     * given a tree or subtree <code>node</code>.
+     *
+     * @param node the root of the given tree or subtree
+     * @return the sum of squared residuals
+     */
+    private double getSumOfSquaredDistances(Node node) {
+        double ss = 0;
+        for (Node child : node.getChildren()) {
+            double d = node.getHeight() - child.getHeight();
+            ss += getSumOfSquaredDistances(child) + d * d;
+//            System.out.println(child.getNr() + " : " + ss + " , " + d);
+        }
+        return ss;
+    }
+
+    /**
+     *
+     * @param rootNode
+     * @return
+     */
+    public FlexibleTree getMinSSDTree(final Node rootNode) {
+        FlexibleTree tree = new FlexibleTree(rootNode);
+        double minSSD = tree.getSumOfSquaredDistance();
+        System.out.println("ssd = " + minSSD + ", tree = " + tree.toNewick());
+        // all child nodes including this node
+        for (Node node : rootNode.getAllChildNodes()) {
+            if (!node.isRoot() && !node.getParent().isRoot()) {
+                tree.changeRootTo(node, 0.5);
+                double ssd = tree.getSumOfSquaredDistance();
+                System.out.println("ssd = " + ssd + ", tree = " + tree.toNewick());
+                if (ssd < minSSD) {
+                    minSSD = ssd;
+                }
+            }
+        }
+        System.out.println("min sum of squared distances = " + minSSD);
+        return tree;
+    }
+
+
+    public FlexibleTree getMinSSDTree() {
+        return this.getMinSSDTree(getRoot());
+    }
 }

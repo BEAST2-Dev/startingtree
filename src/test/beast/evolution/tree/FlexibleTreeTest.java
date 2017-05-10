@@ -42,4 +42,28 @@ public class FlexibleTreeTest extends TestCase {
         }
 
     }
+
+    public void testSumOfSquaredDistance() throws Exception {
+
+        FlexibleTree flexibleTree = new FlexibleTree(trees[0]);
+        System.out.println(flexibleTree.toNewick());
+
+        double ss = flexibleTree.getSumOfSquaredDistance();
+        System.out.println("sum of squared distances = " + ss);
+
+        assertEquals(ss, 54.0);
+    }
+
+    public void testMinSSDTree() throws Exception {
+
+        FlexibleTree flexibleTree = new FlexibleTree(trees[0]);
+        System.out.println(flexibleTree.toNewick());
+
+        FlexibleTree minSSDTree = flexibleTree.getMinSSDTree();
+        assertEquals(minSSDTree.toNewick(), "");
+
+        double ss = minSSDTree.getSumOfSquaredDistance();
+        assertEquals(ss, 54.0);
+    }
+
 }

@@ -60,10 +60,10 @@ public class FlexibleTreeTest extends TestCase {
         System.out.println(flexibleTree.toNewick());
 
         FlexibleTree minSSDTree = flexibleTree.getMinSSDTree();
-        assertEquals(minSSDTree.toNewick(), "");
+        assertEquals(minSSDTree.toNewick(), "(E:4.0,(((A:1.0,B:1.0):1.0,C:2.0):2.0,D:3.0):4.0);");
 
         double ss = minSSDTree.getSumOfSquaredDistance();
-        assertEquals(ss, 54.0);
+        assertEquals(ss, 52.0);
     }
 
 }

@@ -10,10 +10,10 @@ import junit.framework.TestCase;
 public class FlexibleTreeTest extends TestCase {
     String[] trees = new String[]{
             "((((A:1.0,B:1.0):1.0,C:2.0):2.0,D:3.0):3.0,E:5.0);", // binary tree
-//            "(A:0.1,B:0.2,(C:0.3,D:0.4):0.5);" // multifurcating tree
+//            "(A:1.0,B:2.0,(C:3.0,D:4.0):5.0);" // multifurcating tree
     };
     String[] newTrees = new String[]{
-            "(C:1.0,((A:1.0,B:1.0):1.0,(D:3.0,E:8.0):2.0):1.0);", // binary tree
+            "(C:1.0,((A:1.0,B:1.0):1.0,(D:3.0,E:8.0):2.0):1.0):0.0;", // binary tree
             ""
     };
 
@@ -56,11 +56,13 @@ public class FlexibleTreeTest extends TestCase {
 
     public void testMinSSDTree() throws Exception {
 
+        String minSSDTreeString = "(E:4.0,(((A:1.0,B:1.0):1.0,C:2.0):2.0,D:3.0):4.0):0.0;";
+
         FlexibleTree flexibleTree = new FlexibleTree(trees[0]);
         System.out.println(flexibleTree.toNewick());
 
         FlexibleTree minSSDTree = flexibleTree.getMinSSDTree();
-        assertEquals(minSSDTree.toNewick(), "(E:4.0,(((A:1.0,B:1.0):1.0,C:2.0):2.0,D:3.0):4.0);");
+        assertEquals(minSSDTree.toNewick(), minSSDTreeString);
 
         double ss = minSSDTree.getSumOfSquaredDistance();
         assertEquals(ss, 52.0);

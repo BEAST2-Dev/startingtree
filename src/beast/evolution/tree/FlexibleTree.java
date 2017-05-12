@@ -1,6 +1,7 @@
 package beast.evolution.tree;
 
 import beast.core.Description;
+import beast.util.TreeParser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,12 +9,13 @@ import java.util.List;
 @Description("Tree can be changed, such as re-root. Imported from BEAST 1 FlexibleTree.")
 public class FlexibleTree extends Tree {
 
-    // Tree class does not support setLength
-    protected double[] allBranchLengths; // index is Nr
+    // Tree class does not support setLength(), use double[];
+    // index is Nr, the length is from node Nr to its parent, the length of the root is 0.
+    protected double[] allBranchLengths;
 
 
     public FlexibleTree(final String newick) {
-        super(newick, false);
+        super(new TreeParser(newick, false, true, true, 1, false).getRoot());
     }
 
     public FlexibleTree(final Node rootNode) {
@@ -93,7 +95,7 @@ public class FlexibleTree extends Tree {
      *                and its parent node to define the new root, such as 0.5.
      */
     public void changeRootTo(Node node, double propLen) {
-        // todo remove restriction to binary tree
+        // todo non-binary tree re-rooting incorrectly
         if (!TreeUtils.isBinary(this))
             throw new IllegalArgumentException("changeRootTo is only available to binary tree !");
 
@@ -208,50 +210,8 @@ public class FlexibleTree extends Tree {
 
     }
 
-
-    /**
-     * replace BEAST2 <code>String toNewick(boolean onlyTopology)</code>
-     * in <code>Node</code>, which is restricted to binary tree only.
-     *
-     * @param onlyTopology  if true, only print topology
-     * @param printInternalNodes  if true, print internal nodes
-     * @return no ; in the end
-     */
-    public String toNewick(Node node, boolean onlyTopology, boolean printInternalNodes) {
-        final StringBuilder buf = new StringBuilder();
-
-        List<Node> children = node.getChildren();
-        for (int i = 0; i < children.size(); i++) {
-            Node child = children.get(i);
-            if (i == 0) {
-                buf.append("(");
-                buf.append(toNewick(child, onlyTopology, printInternalNodes));
-            } else {
-                buf.append(',');
-                buf.append(toNewick(child, onlyTopology, printInternalNodes));
-            }
-            // print label
-            if (child.isLeaf() || printInternalNodes) {
-                if (child.getID() == null) {
-                    buf.append(child.getNr());
-                } else {
-                    buf.append(child.getID());
-                }
-            }
-            if (!onlyTopology) {
-                buf.append(child.getNewickMetaData());
-                buf.append(":").append(child.getLength());
-            }
-            // close "("
-            if (i == children.size() -1) {
-                buf.append(")");
-            }
-        }
-        return buf.toString();
-    }
-
     public String toNewick() {
-        return this.toNewick(getRoot(), false, false) + ";";
+        return this.getRoot().toNewick() + ";";
     }
 
     public boolean isRoot(Node node) {

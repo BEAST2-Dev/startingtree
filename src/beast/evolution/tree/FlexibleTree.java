@@ -9,7 +9,7 @@ import java.util.List;
 @Description("Tree can be changed, such as re-root. Imported from BEAST 1 FlexibleTree.")
 public class FlexibleTree extends Tree {
 
-    // Tree class does not support setLength(), use double[];
+    // Tree class does not support setBranchLength(), use double[];
     // index is Nr, the length is from node Nr to its parent, the length of the root is 0.
     protected double[] allBranchLengths;
 
@@ -19,7 +19,7 @@ public class FlexibleTree extends Tree {
     }
 
     public FlexibleTree(final Node rootNode) {
-        super(rootNode);
+        super(rootNode); // todo multifurcating tree ?
     }
 
     public void setAllBranchLengths() {
@@ -32,14 +32,14 @@ public class FlexibleTree extends Tree {
         return allBranchLengths;
     }
 
-    public double getLength(Node node) {
+    public double getBranchLength(Node node) {
         if (allBranchLengths == null)
             setAllBranchLengths();
         int nodeNr = node.getNr();
         return allBranchLengths[nodeNr];
     }
 
-    public void setLength(Node node, double branchLength) {
+    public void setBranchLength(Node node, double branchLength) {
         int nodeNr = node.getNr();
         allBranchLengths[nodeNr] = branchLength;
     }
@@ -121,12 +121,14 @@ public class FlexibleTree extends Tree {
         getRoot().addChild(node);
         getRoot().addChild(parent);
         // adjust lengths for children of new root
-        double nodeToParent = getLength(node);
-        // setLength change getLength(node)
-        setLength(node, nodeToParent * propLen);
-        setLength(parent, nodeToParent * (1 - propLen));
+        double nodeToParent = getBranchLength(node);
+        // setBranchLength change getBranchLength(node)
+        setBranchLength(node, nodeToParent * propLen);
+        setBranchLength(parent, nodeToParent * (1 - propLen));
 
         setNodeHeightsByLengths(node, parent, propLen);
+        // update lengths after set heights
+        setAllBranchLengths();
 
         hasStartedEditing = false; // todo is it correct to use restore()? no proposal
     }
@@ -154,8 +156,8 @@ public class FlexibleTree extends Tree {
      */
     private void nodeLengthsToHeights(Node node, double height) {
 
-        // getLength call setAllBranchLengths() in the first time
-        double branchLength = getLength(node);
+        // getBranchLength call setAllBranchLengths() in the first time
+        double branchLength = getBranchLength(node);
         if (branchLength > 0.0)
             height += branchLength;
 
@@ -180,7 +182,7 @@ public class FlexibleTree extends Tree {
             if (child != null) {
                 node.removeChild(child);
                 child.addChild(node);
-                setLength(node, getLength(child));
+                setBranchLength(node, getBranchLength(child));
             }
 
         } else {
@@ -198,13 +200,13 @@ public class FlexibleTree extends Tree {
                     Node tmp = children.get(i);
                     node.removeChild(tmp);
                     child.addChild(tmp);
-                    setLength(tmp, getLength(tmp) + getLength(child));
+                    setBranchLength(tmp, getBranchLength(tmp) + getBranchLength(child));
                 }
             } else {
                 Node tmp = children.get(0);
                 node.removeChild(tmp);
                 child.addChild(tmp);
-                setLength(tmp, getLength(tmp) + getLength(child));
+                setBranchLength(tmp, getBranchLength(tmp) + getBranchLength(child));
             }
         }
 
@@ -219,7 +221,10 @@ public class FlexibleTree extends Tree {
     }
 
 
-    //++++++++ the sum of squared distances ++++++++
+    //++++++++ Time tree ++++++++
+
+
+
 
     /**
      * Calculate the sum of squared distances of branch length (distance)

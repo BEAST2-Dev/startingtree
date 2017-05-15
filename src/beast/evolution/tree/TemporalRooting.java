@@ -294,6 +294,9 @@ public class TemporalRooting {
                     }
                 }
             }
+
+            System.out.println("score = " + minF);
+            System.out.println("score = " + tmpTree.toNewick());
         }
 
         return bestTree;

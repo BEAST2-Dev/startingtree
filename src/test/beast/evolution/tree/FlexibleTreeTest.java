@@ -13,23 +13,26 @@ public class FlexibleTreeTest extends TestCase {
 //            "(A:1.0,B:2.0,(C:3.0,D:4.0):5.0);" // multifurcating tree
     };
     String[] newTrees = new String[]{
-            "(C:1.0,((A:1.0,B:1.0):1.0,(D:3.0,E:8.0):2.0):1.0):0.0;", // binary tree
-            ""
+            "(A:0.5,(B:1.0,(C:2.0,(D:3.0,E:8.0):2.0):1.0):0.5):0.0;",
+            "(B:0.5,((C:2.0,(D:3.0,E:8.0):2.0):1.0,A:1.0):0.5):0.0;",
+            "(C:1.0,((D:3.0,E:8.0):2.0,(A:1.0,B:1.0):1.0):1.0):0.0;",
+            "(D:1.5,(E:8.0,((A:1.0,B:1.0):1.0,C:2.0):2.0):1.5):0.0;",
+            "(E:4.0,(((A:1.0,B:1.0):1.0,C:2.0):2.0,D:3.0):4.0):0.0;",
+            "((A:1.0,B:1.0):0.5,(C:2.0,(D:3.0,E:8.0):2.0):0.5):0.0;"
     };
 
     public void testChangeRootTo() throws Exception {
+        String tree = trees[0];
+        FlexibleTree flexibleTree = new FlexibleTree(tree);
 
-        for (int i = 0; i < trees.length; i++) {
-            String tree = trees[i];
+        System.out.println(flexibleTree.toNewick() + "\n");
 
-            System.out.println("Change root of tree " + i );
+        for (int i = 0; i < newTrees.length; i++) {
+            // set new root between i and its parent with half length each side
+            Node newRoot = flexibleTree.getNode(i);
 
-            FlexibleTree flexibleTree = new FlexibleTree(tree);
+            System.out.println("Change the root at the lineage " + i + " ascended from " + newRoot.getID());
 
-            System.out.println(flexibleTree.toNewick());
-
-            // set new root between C and its parent with half length each side
-            Node newRoot = flexibleTree.getNode(2);
             flexibleTree.changeRootTo(newRoot, 0.5);
             String newTree = flexibleTree.toNewick();
 
@@ -54,18 +57,18 @@ public class FlexibleTreeTest extends TestCase {
         assertEquals(54.0, ss);
     }
 
-//    public void testMinSSDTree() throws Exception {
-//
-//        String minSSDTreeString = "(E:4.0,(((A:1.0,B:1.0):1.0,C:2.0):2.0,D:3.0):4.0):0.0;";
-//
-//        FlexibleTree flexibleTree = new FlexibleTree(trees[0]);
-//        System.out.println(flexibleTree.toNewick());
-//
-//        FlexibleTree minSSDTree = flexibleTree.getMinSSDTree();
-//        assertEquals(minSSDTree.toNewick(), minSSDTreeString);
-//
-//        double ss = minSSDTree.getSumOfSquaredDistance();
-//        assertEquals(52.0, ss);
-//    }
+    public void testMinSSDTree() throws Exception {
+
+        String minSSDTreeString = "(E:4.0,(((A:1.0,B:1.0):1.0,C:2.0):2.0,D:3.0):4.0):0.0;";
+
+        FlexibleTree flexibleTree = new FlexibleTree(trees[0]);
+        System.out.println(flexibleTree.toNewick());
+
+        FlexibleTree minSSDTree = flexibleTree.getMinSSDTree();
+        assertEquals(minSSDTree.toNewick(), minSSDTreeString);
+
+        double ss = minSSDTree.getSumOfSquaredDistance();
+        assertEquals(54.0, ss);
+    }
 
 }

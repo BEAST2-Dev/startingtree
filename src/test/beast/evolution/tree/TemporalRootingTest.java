@@ -85,4 +85,13 @@ public class TemporalRootingTest extends TestCase {
 
     }
 
+    public void testFindRoot() {
+        Tree rootedTree = new Tree(trees[1]);
+        System.out.println(rootedTree.getRoot().toNewick());
+
+        Tree bestTree = temporalRooting.findRoot(rootedTree, TemporalRooting.RootingFunction.HEURISTIC_RESIDUAL_MEAN_SQUARED);
+        System.out.println(bestTree.getRoot().toNewick());
+
+    }
+
 }

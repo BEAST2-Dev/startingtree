@@ -1,6 +1,7 @@
 package beast.evolution.tree;
 
 
+import beast.core.Citation;
 import beast.core.Description;
 import beast.evolution.alignment.TaxonSet;
 import beast.math.UnivariateFunction;
@@ -12,14 +13,17 @@ import java.util.*;
 
 /**
  *  Usage:
- *  <code> Tree rootedTree = tree;
+ *  <code>
+ *  Tree rootedTree = tree;
  *  if (!keepRoot)
  *    rootedTree = temporalRooting.findRoot(tree, TemporalRooting.RootingFunction.CORRELATION);
- *  regressions.add(temporalRooting.getRootToTipRegression(rootedTree)); </code>
+ *  regressions.add(temporalRooting.getRootToTipRegression(rootedTree));
+ *  </code>
  *
  *  @author Andrew Rambaut
  */
-@Description("Regression method to find optimized root. Imported from BEAST 1 TemporalRooting.")
+@Citation("Rambaut et al 2016, 'Exploring the temporal structure of heterochronous sequences using TempEst (formerly Path-O-Gen)', Virus Evolution")
+@Description("Regression method to analyse temporally sampled sequence data. Imported from BEAST 1 TempEst.")
 public class TemporalRooting {
 
     public enum RootingFunction {
@@ -94,22 +98,43 @@ public class TemporalRooting {
         return dateMax - dateMin;
     }
 
+    /**
+     * Find the optimised root looping through each branch and resetting a new root.
+     *
+     * @param tree binary tree
+     * @param rootingFunction
+     * @return
+     */
     public Tree findRoot(Tree tree, RootingFunction rootingFunction) {
 
         double[] dates = getTipDates(tree);
         return findGlobalRoot(tree, dates, rootingFunction, forcePositiveRate);
     }
 
+    /**
+     * Find the optimised root between its two children without changing all other child nodes.
+     *
+     * @param tree binary tree
+     * @param rootingFunction
+     * @return
+     */
     public Tree findLocalRoot(Tree tree, RootingFunction rootingFunction) {
 
         double[] dates = getTipDates(tree);
         FlexibleTree bestTree = new FlexibleTree(tree.getRoot());
 
-        findLocalRoot(bestTree, dates, rootingFunction, forcePositiveRate);
-
+        double score = findLocalRoot(bestTree, dates, rootingFunction, forcePositiveRate);
+        System.out.println("score = " + score);
         return bestTree;
     }
 
+    /**
+     * Root to tip distance vs. time of sampling.
+     * Time is given in <code>TraitSet</code>
+     *
+     * @param tree
+     * @return <code>Regression</code> result.
+     */
     public Regression getRootToTipRegression(Tree tree) {
 
         if (contemporaneous) {
@@ -365,7 +390,7 @@ public class TemporalRooting {
 
         UnivariateMinimum minimum = new UnivariateMinimum();
         double x = minimum.findMinimum(f);
-
+// todo x == 0 ?
         double fminx = minimum.fminx;
         double l1 = x * sumLength;
         double l2 = (1.0 - x) * sumLength;
@@ -397,7 +422,7 @@ public class TemporalRooting {
 
         int N = tipSet1.size() + tipSet2.size();
         int n = tipSet2.size();
-
+//todo if n==0, then N < y.length
         final double[] c = new double[N];
         for (Node tip : tipSet2) {
             int i = tip.getNr();
@@ -474,15 +499,15 @@ public class TemporalRooting {
         return density;
     }
 
-//    public Tree adjustTreeToConstraints(Tree source, Map<Set<String>, double[]> cladeHeights) {
-//
-//        FlexibleTree tree = new FlexibleTree(source.getRoot());
-//        setHeightsFromDates(tree);
-//
-//        adjustTreeToConstraints(tree, tree.getRoot(), null, cladeHeights);
-//
-//        return tree;
-//    }
+    public Tree adjustTreeToConstraints(Tree source, Map<Set<String>, double[]> cladeHeights) {
+
+        FlexibleTree tree = new FlexibleTree(source.getRoot());
+        setHeightsFromDates(tree);
+
+        adjustTreeToConstraints(tree, tree.getRoot(), null, cladeHeights);
+
+        return tree;
+    }
 
     public int getCurrentRootBranch() {
         return currentRootBranch;
@@ -542,8 +567,8 @@ public class TemporalRooting {
         return node.getHeight();
     }
 
-//    private void setHeightsFromDates(FlexibleTree tree) {
-//
+    private void setHeightsFromDates(FlexibleTree tree) {
+        throw new UnsupportedOperationException("In development");
 //        beast.evolution.util.Date mostRecent = null;
 //        for (int i = 0; i < taxa.getTaxonCount(); i++) {
 //            Date date = taxa.getTaxon(i).getDate();
@@ -567,7 +592,7 @@ public class TemporalRooting {
 //                }
 //            }
 //        }
-//    }
+    }
 
 }
 

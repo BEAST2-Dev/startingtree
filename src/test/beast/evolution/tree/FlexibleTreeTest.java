@@ -51,21 +51,21 @@ public class FlexibleTreeTest extends TestCase {
         double ss = flexibleTree.getSumOfSquaredDistance();
         System.out.println("sum of squared distances = " + ss);
 
-        assertEquals(ss, 54.0);
+        assertEquals(54.0, ss);
     }
 
-    public void testMinSSDTree() throws Exception {
-
-        String minSSDTreeString = "(E:4.0,(((A:1.0,B:1.0):1.0,C:2.0):2.0,D:3.0):4.0):0.0;";
-
-        FlexibleTree flexibleTree = new FlexibleTree(trees[0]);
-        System.out.println(flexibleTree.toNewick());
-
-        FlexibleTree minSSDTree = flexibleTree.getMinSSDTree();
-        assertEquals(minSSDTree.toNewick(), minSSDTreeString);
-
-        double ss = minSSDTree.getSumOfSquaredDistance();
-        assertEquals(ss, 52.0);
-    }
+//    public void testMinSSDTree() throws Exception {
+//
+//        String minSSDTreeString = "(E:4.0,(((A:1.0,B:1.0):1.0,C:2.0):2.0,D:3.0):4.0):0.0;";
+//
+//        FlexibleTree flexibleTree = new FlexibleTree(trees[0]);
+//        System.out.println(flexibleTree.toNewick());
+//
+//        FlexibleTree minSSDTree = flexibleTree.getMinSSDTree();
+//        assertEquals(minSSDTree.toNewick(), minSSDTreeString);
+//
+//        double ss = minSSDTree.getSumOfSquaredDistance();
+//        assertEquals(52.0, ss);
+//    }
 
 }

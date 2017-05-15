@@ -42,7 +42,7 @@ public class TemporalRootingTest extends TestCase {
         temporalRooting = new TemporalRooting(timeTraitSet);
     }
 
-    public void testRootToTipRegression() throws Exception {
+    public void testRootToTipRegression() {
 
 //        for (int i = 0; i < trees.length; i++) {
         Tree rootedTree = new Tree(trees[0]);
@@ -65,6 +65,23 @@ public class TemporalRootingTest extends TestCase {
         assertEquals(0.94186, Math.round(r.getRSquared() * decimal) / decimal);
         assertEquals(0.97049, Math.round(r.getCorrelationCoefficient() * decimal) / decimal);
 //        }
+
+    }
+
+    // limited to set new root between internal nodes
+    public void testFindLocalRoot() {
+        Tree rootedTree = new Tree(trees[1]);
+        System.out.println(rootedTree.getRoot().toNewick());
+
+        Tree bestTree = temporalRooting.findLocalRoot(rootedTree, TemporalRooting.RootingFunction.HEURISTIC_RESIDUAL_MEAN_SQUARED);
+        System.out.println(bestTree.getRoot().toNewick());
+
+        assertEquals("", bestTree.getRoot().toNewick());
+
+//        Tree bestTree = temporalRooting.findLocalRoot(rootedTree, TemporalRooting.RootingFunction.RESIDUAL_MEAN_SQUARED);
+//        System.out.println(bestTree.getRoot().toNewick());
+//
+//        assertEquals("", bestTree.getRoot().toNewick());
 
     }
 

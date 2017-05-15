@@ -9,145 +9,88 @@ import java.util.List;
 @Description("Tree can be changed, such as re-root. Imported from BEAST 1 FlexibleTree.")
 public class FlexibleTree extends Tree {
 
+    boolean heightsKnown = false;
+    boolean lengthsKnown = false;
+
     // Tree class does not support setBranchLength(), use double[];
     // index is Nr, the length is from node Nr to its parent, the length of the root is 0.
-    protected double[] allBranchLengths;
+    protected double[] allBranchLengths = new double[getNodeCount()];
 
 
     public FlexibleTree(final String newick) {
         super(new TreeParser(newick, false, true, true, 1, false).getRoot());
+
+        heightsKnown = hasNodeHeights();
+        lengthsKnown = hasBranchLengths();
     }
 
     public FlexibleTree(final Node rootNode) {
         super(rootNode); // todo multifurcating tree ?
+
+        heightsKnown = hasNodeHeights();
+        lengthsKnown = hasBranchLengths();
     }
 
-    public void setAllBranchLengths() {
-        allBranchLengths = getAllBranchLengths(getRoot(), getNodeCount());
+    public boolean hasNodeHeights() {
+        return heightsKnown;
     }
 
-    public double[] getAllBranchLengths() {
-        if (allBranchLengths == null)
-            setAllBranchLengths();
-        return allBranchLengths;
+    public boolean hasBranchLengths() {
+        return lengthsKnown;
     }
 
     public double getBranchLength(Node node) {
-        if (allBranchLengths == null)
-            setAllBranchLengths();
+        if (!lengthsKnown)
+            calculateBranchLengths();
         int nodeNr = node.getNr();
         return allBranchLengths[nodeNr];
     }
 
-    public void setBranchLength(Node node, double branchLength) {
+    public void setBranchLength(Node node, double length) {
+        if (!lengthsKnown)
+            calculateBranchLengths();
+
         int nodeNr = node.getNr();
-        allBranchLengths[nodeNr] = branchLength;
+        allBranchLengths[nodeNr] = length;
+
+        heightsKnown = false;
+
+//        fireTreeChanged();
+    }
+
+    public void setNodeHeight(Node node, double height) {
+        if (!heightsKnown)
+            calculateNodeHeights();
+
+        node.setHeight(height);
+
+        lengthsKnown = false;
+
+//        fireTreeChanged();
     }
 
     /**
-     * Get all branch lengths of sub/tree.
-     * If lengths[nodeNr] == 0, then either is root or not child node
-     *
-     * @param node a given node, such as <code>getRoot()</code>
-     * @param maxNr the max index of all nodes, such as <code>getNodeCount()</code>
-     * @return
+     * Set the node heights from the current branch lengths.
      */
-    private double[] getAllBranchLengths(final Node node, int maxNr) {
-        double[] lengths = new double[maxNr];
-        List<Node> allChildNodes = node.getAllChildNodes();
-        for (Node child : allChildNodes) {
-            int nodeNr = child.getNr();
-            double branchLength = child.getLength();
-//            if (lengths[nodeNr] > 0)
-//                throw new IllegalArgumentException("Duplicate node Nr is invalid !");
-            lengths[nodeNr] = branchLength;
-        }
-        return lengths;
-    }
-
-
-    /**
-     * Get the maximum node height of the sub/tree including given <code>node</code>
-     *
-     * @param node the root of the given tree or subtree
-     * @return
-     */
-    public static double getMaxNodeHeight(Node node) {
-        if (!node.isLeaf()) {
-            double maxNodeHeight = 0;
-            for (Node child : node.getAllChildNodes()) {
-                double childHeight = child.getHeight();
-                if (maxNodeHeight < childHeight)
-                    maxNodeHeight = childHeight;
-            }
-            return maxNodeHeight;
-        } else return node.getHeight();
-    }
-
-
-    /**
-     * Re-root the tree on the branch above the given <code>node</code>
-     * with the given new root.
-     * <code>len(node, new_root) = len(node, parent) * propLen </code>
-     *
-     * @param node the new root
-     * @param propLen the proportion of the branch length between <code>node</code>
-     *                and its parent node to define the new root, such as 0.5.
-     */
-    public void changeRootTo(Node node, double propLen) {
-        // todo non-binary tree re-rooting incorrectly
-        if (!TreeUtils.isBinary(this))
-            throw new IllegalArgumentException("changeRootTo is only available to binary tree !");
-
-        Node parent = node.getParent();
-        if (parent == null || parent == root) {
-            // the node is already the root so nothing to do...
-            return;
-        }
-
-        hasStartedEditing = true;
-        // todo m_tree.getState() == null
-//        startEditing(null); // called in rm / add
-
-        setAllBranchLengths();
-
-        Node parent2 = parent.getParent();
-
-        // only change topology
-        swapParentNode(parent, parent2, null);
-
-        // the root is now free so use it as the root again
-        parent.removeChild(node);
-        getRoot().addChild(node);
-        getRoot().addChild(parent);
-        // adjust lengths for children of new root
-        double nodeToParent = getBranchLength(node);
-        // setBranchLength change getBranchLength(node)
-        setBranchLength(node, nodeToParent * propLen);
-        setBranchLength(parent, nodeToParent * (1 - propLen));
-
-        setNodeHeightsByLengths(node, parent, propLen);
-        // update lengths after set heights
-        setAllBranchLengths();
-
-        hasStartedEditing = false; // todo is it correct to use restore()? no proposal
-    }
-
-    /**
-     * Set the node heights from the given branch lengths.
-     */
-    private void setNodeHeightsByLengths(Node child1, Node child2, double propLen) {
+    protected void calculateNodeHeights() {
+        if (!lengthsKnown)
+            throw new IllegalArgumentException("Branch lengths not known");
 
         nodeLengthsToHeights(getRoot(), 0.0);
 
-        double maxHeight = FlexibleTree.getMaxNodeHeight(getRoot());
+        double maxHeight = 0.0;
+        Node node;
+        for (Node tip : getExternalNodes()) {
+            if (tip.getHeight() > maxHeight)
+                maxHeight = tip.getHeight();
+        }
 
         for (int i = 0; i < getNodeCount(); i++) {
-            Node node = getNode(i);
-            // Set the node heights to the reversed heights
+            node = getNode(i);
             node.setHeight(maxHeight - node.getHeight());
         }
 
+        heightsKnown = true;
     }
 
     /**
@@ -168,6 +111,83 @@ public class FlexibleTree extends Tree {
         }
 
     }
+
+    /**
+     * Calculate branch lengths from the current node heights.
+     */
+    protected void calculateBranchLengths() {
+        List<Node> allChildNodes = getRoot().getAllChildNodes();
+        for (Node child : allChildNodes) {
+            int nodeNr = child.getNr();
+            double branchLength = child.getLength();
+//            if (lengths[nodeNr] > 0)
+//                throw new IllegalArgumentException("Duplicate node Nr is invalid !");
+            allBranchLengths[nodeNr] = branchLength;
+        }
+
+        lengthsKnown = true;
+    }
+
+    /**
+     * Calculate branch lengths from the current node heights.
+     */
+    private void nodeHeightsToLengths(Node node, double height) {
+
+        setBranchLength(node, height - node.getHeight());
+
+        for (Node child : node.getChildren())
+            nodeHeightsToLengths(child, node.getHeight());
+
+    }
+
+    /**
+     * Re-root the tree on the branch above the given <code>node</code>
+     * with the given new root.
+     * <code>len(node, new_root) = len(node, parent) * propLen </code>
+     *
+     * @param node the new root
+     * @param propLen the proportion of the branch length between <code>node</code>
+     *                and its parent node to define the new root, such as 0.5.
+     */
+    public void changeRootTo(Node node, double propLen) {
+        // todo non-binary tree re-rooting incorrectly
+        if (!TreeUtils.isBinary(this))
+            throw new IllegalArgumentException("changeRootTo is only available to binary tree !");
+
+        Node node1 = node;
+        Node parent = node1.getParent();
+        if (parent == null || parent == root) {
+            // the node is already the root so nothing to do...
+            return;
+        }
+
+        hasStartedEditing = true;
+        // todo m_tree.getState() == null
+//        startEditing(null); // called in rm / add
+
+        if (!lengthsKnown)
+            calculateBranchLengths();
+
+        Node parent2 = parent.getParent();
+
+        // only change topology
+        swapParentNode(parent, parent2, null);
+
+        // the root is now free so use it as the root again
+        parent.removeChild(node1);
+        getRoot().addChild(node1);
+        getRoot().addChild(parent);
+        // adjust lengths for children of new root
+        double nodeToParent = getBranchLength(node1);
+        // setBranchLength change getBranchLength(node1)
+        setBranchLength(node1, nodeToParent * propLen);
+        setBranchLength(parent, nodeToParent * (1 - propLen));
+
+        heightsKnown = false;
+
+        hasStartedEditing = false; // todo is it correct to use restore()? no proposal
+    }
+
 
     /**
      * Work up through the tree putting the parent into the child.
@@ -213,7 +233,40 @@ public class FlexibleTree extends Tree {
     }
 
     public String toNewick() {
+        if (lengthsKnown)
+            return toNewickLengthsKnown(getRoot(), false) + ";";
         return this.getRoot().toNewick() + ";";
+    }
+
+    // lengthsKnown == true
+    private String toNewickLengthsKnown(Node node, boolean onlyTopology) {
+        final StringBuilder buf = new StringBuilder();
+        if (!node.isLeaf()) {
+            buf.append("(");
+            boolean isFirst = true;
+            for (Node child : node.getChildren()) {
+                if (isFirst)
+                    isFirst = false;
+                else
+                    buf.append(",");
+                buf.append(toNewickLengthsKnown(child, onlyTopology));
+            }
+            buf.append(")");
+
+            if (node.getID() != null)
+                buf.append(node.getID());
+        } else {
+            if (node.getID() != null)
+                buf.append(node.getID());
+            else
+                buf.append(node.labelNr);
+        }
+
+        if (!onlyTopology) {
+            buf.append(node.getNewickMetaData());
+            buf.append(":").append(node.getNewickLengthMetaData()).append(getBranchLength(node));
+        }
+        return buf.toString();
     }
 
     public boolean isRoot(Node node) {
@@ -221,10 +274,9 @@ public class FlexibleTree extends Tree {
     }
 
 
+
+
     //++++++++ Time tree ++++++++
-
-
-
 
     /**
      * Calculate the sum of squared distances of branch length (distance)

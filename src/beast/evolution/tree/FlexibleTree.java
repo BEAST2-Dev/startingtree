@@ -1,9 +1,11 @@
 package beast.evolution.tree;
 
 import beast.core.Description;
+import beast.math.statistic.Regression;
 import beast.util.TreeParser;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Description("Tree can be changed, such as re-root. Imported from BEAST 1 FlexibleTree.")
@@ -19,16 +21,37 @@ public class FlexibleTree extends Tree {
 
     public FlexibleTree(final String newick) {
         super(new TreeParser(newick, false, true, true, 1, false).getRoot());
-
-        heightsKnown = hasNodeHeights();
-        lengthsKnown = hasBranchLengths();
+//        heightsKnown = true;
     }
 
+    /**
+     * This constructor wraps a new root node in a <code>FlexibleTree</code> object,
+     * which does not copy the tree.
+     * To copy a <code>FlexibleTree</code>, use {@link FlexibleTree#copy() FlexibleTree#copy} only,
+     * which performs true deep copy.
+     * For example, <code>oldTree.copy()</code>.
+     * Note: <code>new FlexibleTree(oldTree.getRoot().copy())</code>
+     * does not copy flags and <code>allBranchLengths</code>
+     *
+     * @param rootNode root <code>Node</code>
+     */
     public FlexibleTree(final Node rootNode) {
-        super(rootNode); // todo multifurcating tree ?
+        super(rootNode); // todo multifurcating tree
+//        heightsKnown = true;
+    }
 
-        heightsKnown = hasNodeHeights();
-        lengthsKnown = hasBranchLengths();
+    /**
+     * deep copy, returns a completely new tree
+     * @return FlexibleTree
+     */
+    public FlexibleTree copy() {
+        FlexibleTree flexibleTree = new FlexibleTree(getRoot().copy());
+        flexibleTree.setID(getID());
+        flexibleTree.index = index;
+        flexibleTree.heightsKnown = this.heightsKnown;
+        flexibleTree.lengthsKnown = this.lengthsKnown;
+        flexibleTree.allBranchLengths = Arrays.copyOf(this.allBranchLengths, this.allBranchLengths.length);
+        return flexibleTree;
     }
 
     public boolean hasNodeHeights() {
@@ -284,53 +307,65 @@ public class FlexibleTree extends Tree {
      *
      * @return the sum of squared residuals
      */
-    public double getSumOfSquaredDistance() {
-        return this.getSumOfSquaredDistances(getRoot());
+    public double getRSS(double mu) {
+        if (!lengthsKnown)
+            calculateBranchLengths();
+        return this.getRSS(getRoot(), mu);
     }
 
     /**
-     * Post order traversal to calculate the sum of squared distances of branch length (distance)
+     * Post order traversal to calculate the residual sum of squares
      * given a tree or subtree <code>node</code>.
      *
      * @param node the root of the given tree or subtree
      * @return the sum of squared residuals
      */
-    private double getSumOfSquaredDistances(Node node) {
-        double ss = 0;
+    private double getRSS(Node node, double mu) {
+        double rss = 0;
         for (Node child : node.getChildren()) {
-            double d = node.getHeight() - child.getHeight();
-            ss += getSumOfSquaredDistances(child) + d * d;
+            // b_i
+            double b = getBranchLength(child);
+            // t_i - t_a(i)
+            double t = node.getHeight() - child.getHeight();
+            rss += getRSS(child, mu) + (b - mu*t)*(b - mu*t); // / sigma * sigma
 //            System.out.println(child.getNr() + " : " + ss + " , " + d);
         }
-        return ss;
+        return rss;
     }
 
     /**
      *
-     * @param rootNode
      * @return
      */
-    public FlexibleTree getMinSSDTree(final Node rootNode) {
-        FlexibleTree tree = new FlexibleTree(rootNode);
-        double minSSD = tree.getSumOfSquaredDistance();
-        System.out.println("ssd = " + minSSD + ", tree = " + tree.toNewick());
+    public FlexibleTree getMinRSSTree(double mu) {
+        final FlexibleTree source = this.copy();
+        if (mu <= 0) {
+            if (timeTraitSet == null)
+                throw new IllegalArgumentException("Date trait is required !");
+            TemporalRooting temporalRooting = new TemporalRooting(timeTraitSet);
+            Regression r = temporalRooting.getRootToTipRegression(source);
+            // todo correct ?
+            mu = r.getGradient();
+        }
+
+        double minRSS = source.getRSS(mu);
+        System.out.println("Init minRSS = " + minRSS + ", tree = " + source.toNewick());
         // all child nodes including this node
-        for (Node node : rootNode.getAllChildNodes()) {
+        FlexibleTree bestTree = source.copy();
+        for (Node node : source.getRoot().getAllChildNodes()) {
             if (!node.isRoot() && !node.getParent().isRoot()) {
-                tree.changeRootTo(node, 0.5);
-                double ssd = tree.getSumOfSquaredDistance();
-                System.out.println("ssd = " + ssd + ", tree = " + tree.toNewick());
-                if (ssd < minSSD) {
-                    minSSD = ssd;
+                source.changeRootTo(node, 0.5);
+                double rss = source.getRSS(mu);
+                System.out.println("minRSS = " + minRSS + ", rss = " + rss + ", tree = " + source.toNewick());
+                if (rss < minRSS) {
+                    minRSS = rss;
+                    bestTree = source.copy();
                 }
             }
         }
-        System.out.println("min sum of squared distances = " + minSSD);
-        return tree;
+        System.out.println("min residual sum of squares = " + minRSS);
+        System.out.println("bestTree = " + bestTree.toNewick());
+        return bestTree;
     }
 
-
-    public FlexibleTree getMinSSDTree() {
-        return this.getMinSSDTree(getRoot());
-    }
 }

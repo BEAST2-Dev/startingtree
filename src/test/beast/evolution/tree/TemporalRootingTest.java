@@ -3,9 +3,9 @@ package test.beast.evolution.tree;
 import beast.evolution.alignment.Alignment;
 import beast.evolution.alignment.Sequence;
 import beast.evolution.alignment.TaxonSet;
+import beast.evolution.tree.FlexibleTree;
 import beast.evolution.tree.TemporalRooting;
 import beast.evolution.tree.TraitSet;
-import beast.evolution.tree.Tree;
 import beast.math.statistic.Regression;
 import beast.math.statistic.Variate;
 import junit.framework.TestCase;
@@ -17,12 +17,13 @@ import java.util.List;
  * @author Walter Xie
  */
 public class TemporalRootingTest extends TestCase {
-    String[] trees = new String[]{
-            "((((A:1.0,B:1.0):1.0,C:2.0):2.0,D:3.0):3.0,E:5.0);",
-            "((D:3.0,E:8.0):1.0,((A:1.0,B:1.0):1.0,C:2.0):1.0);",
-            "((((A:1.0,B:1.0):1.0,C:2.0):2.0,E:8.0):1.5,D:1.5);"
-    };
+//    String[] trees = new String[]{
+//            "((((A:1.0,B:1.0):1.0,C:2.0):2.0,D:3.0):3.0,E:5.0);",
+//            "((D:3.0,E:8.0):1.0,((A:1.0,B:1.0):1.0,C:2.0):1.0);",
+//            "((((A:1.0,B:1.0):1.0,C:2.0):2.0,E:8.0):1.5,D:1.5);"
+//    };
 
+    double decimal = 100000;
     TemporalRooting temporalRooting;
 
     @Override
@@ -45,7 +46,7 @@ public class TemporalRootingTest extends TestCase {
     public void testRootToTipRegression() {
 
 //        for (int i = 0; i < trees.length; i++) {
-        Tree rootedTree = new Tree(trees[0]);
+        FlexibleTree rootedTree = new FlexibleTree(FlexibleTreeTest.binaryTrees[0]);
         System.out.println(rootedTree.getRoot().toNewick());
 
         Regression r = temporalRooting.getRootToTipRegression(rootedTree);
@@ -57,7 +58,6 @@ public class TemporalRootingTest extends TestCase {
             System.out.println(dates.get(i) + "\t" + distances.get(i));
         }
 
-        double decimal = 100000;
         assertEquals(0.41860, Math.round(r.getGradient() * decimal) / decimal);
         assertEquals(2000.11111, Math.round(r.getXIntercept() * decimal) / decimal);
         assertEquals(-837.25581, Math.round(r.getYIntercept() * decimal) / decimal);
@@ -68,29 +68,29 @@ public class TemporalRootingTest extends TestCase {
 
     }
 
-    // limited to set new root between internal nodes
+    // todo limited to set new root between internal nodes
     public void testFindLocalRoot() {
-        Tree rootedTree = new Tree(trees[1]);
-        System.out.println(rootedTree.getRoot().toNewick());
+        FlexibleTree rootedTree = new FlexibleTree(FlexibleTreeTest.binaryTrees[1]);
+        System.out.println(rootedTree.toNewick() + "\n");
 
-        Tree bestTree = temporalRooting.findLocalRoot(rootedTree, TemporalRooting.RootingFunction.HEURISTIC_RESIDUAL_MEAN_SQUARED);
-        System.out.println(bestTree.getRoot().toNewick());
+        FlexibleTree bestTree = temporalRooting.findLocalRoot(rootedTree, TemporalRooting.RootingFunction.HEURISTIC_RESIDUAL_MEAN_SQUARED);
+        System.out.println(bestTree.toNewick());
 
-        assertEquals("", bestTree.getRoot().toNewick());
+        assertEquals("", bestTree.toNewick());
 
-//        Tree bestTree = temporalRooting.findLocalRoot(rootedTree, TemporalRooting.RootingFunction.RESIDUAL_MEAN_SQUARED);
-//        System.out.println(bestTree.getRoot().toNewick());
+//        FlexibleTree bestTree = temporalRooting.findLocalRoot(rootedTree, TemporalRooting.RootingFunction.RESIDUAL_MEAN_SQUARED);
+//        System.out.println(bestTree.toNewick());
 //
-//        assertEquals("", bestTree.getRoot().toNewick());
+//        assertEquals("", bestTree.toNewick());
 
     }
 
     public void testFindRoot() {
-        Tree rootedTree = new Tree(trees[1]);
-        System.out.println(rootedTree.getRoot().toNewick());
+        FlexibleTree rootedTree = new FlexibleTree(FlexibleTreeTest.binaryTrees[0]);
+        System.out.println(rootedTree.toNewick() + "\n");
 
-        Tree bestTree = temporalRooting.findRoot(rootedTree, TemporalRooting.RootingFunction.HEURISTIC_RESIDUAL_MEAN_SQUARED);
-        System.out.println(bestTree.getRoot().toNewick());
+        FlexibleTree bestTree = temporalRooting.findRoot(rootedTree, TemporalRooting.RootingFunction.HEURISTIC_RESIDUAL_MEAN_SQUARED);
+        System.out.println(bestTree.toNewick());
 
     }
 

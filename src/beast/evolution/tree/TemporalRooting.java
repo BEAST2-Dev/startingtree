@@ -105,7 +105,7 @@ public class TemporalRooting {
      * @param rootingFunction
      * @return
      */
-    public Tree findRoot(Tree tree, RootingFunction rootingFunction) {
+    public FlexibleTree findRoot(FlexibleTree tree, RootingFunction rootingFunction) {
 
         double[] dates = getTipDates(tree);
         return findGlobalRoot(tree, dates, rootingFunction, forcePositiveRate);
@@ -118,10 +118,11 @@ public class TemporalRooting {
      * @param rootingFunction
      * @return
      */
-    public Tree findLocalRoot(Tree tree, RootingFunction rootingFunction) {
+    // todo limited to set new root between internal nodes
+    public FlexibleTree findLocalRoot(FlexibleTree tree, RootingFunction rootingFunction) {
 
         double[] dates = getTipDates(tree);
-        FlexibleTree bestTree = new FlexibleTree(tree.getRoot());
+        FlexibleTree bestTree = tree.copy();
 
         double score = findLocalRoot(bestTree, dates, rootingFunction, forcePositiveRate);
         System.out.println("score = " + score);
@@ -135,7 +136,7 @@ public class TemporalRooting {
      * @param tree
      * @return <code>Regression</code> result.
      */
-    public Regression getRootToTipRegression(Tree tree) {
+    public Regression getRootToTipRegression(FlexibleTree tree) {
 
         if (contemporaneous) {
             throw new IllegalArgumentException("Cannot do a root to tip regression on contemporaneous tips");
@@ -160,7 +161,7 @@ public class TemporalRooting {
         return new Regression(dates, density);
     }
 
-    public Regression getAncestorRootToTipRegression(Tree tree, Regression regression) {
+    public Regression getAncestorRootToTipRegression(FlexibleTree tree, Regression regression) {
 
         if (contemporaneous) {
             throw new IllegalArgumentException("Cannot do a root to tip regression on contemporaneous tips");
@@ -180,7 +181,7 @@ public class TemporalRooting {
         return new Regression(dates, distances);
     }
 
-    public double[] getRootToTipDistances(Tree tree) {
+    public double[] getRootToTipDistances(FlexibleTree tree) {
 
         List<Node> externalNodes = tree.getExternalNodes();
         double[] d = new double[externalNodes.size()];
@@ -191,7 +192,7 @@ public class TemporalRooting {
         return d;
     }
 
-    public double[] getParentRootToTipDistances(Tree tree) {
+    public double[] getParentRootToTipDistances(FlexibleTree tree) {
 
         List<Node> externalNodes = tree.getExternalNodes();
         double[] d = new double[externalNodes.size()];
@@ -203,7 +204,7 @@ public class TemporalRooting {
         return d;
     }
 
-    public double[] getRootToTipResiduals(Tree tree, Regression regression) {
+    public double[] getRootToTipResiduals(FlexibleTree tree, Regression regression) {
 
         List<Node> externalNodes = tree.getExternalNodes();
         double[] r = new double[externalNodes.size()];
@@ -266,18 +267,17 @@ public class TemporalRooting {
         return labels;
     }
 
-    private Tree findGlobalRoot(final Tree source, final double[] dates, RootingFunction rootingFunction, boolean forcePositiveRate) {
+    private FlexibleTree findGlobalRoot(final FlexibleTree source, final double[] dates, RootingFunction rootingFunction, boolean forcePositiveRate) {
 
-        FlexibleTree bestTree = new FlexibleTree(source.getRoot());
+        FlexibleTree bestTree = source.copy();
         double minF = findLocalRoot(bestTree, dates, rootingFunction, forcePositiveRate);
         double minDiff = Double.MAX_VALUE;
 
         totalRootBranches = source.getNodeCount();
         for (currentRootBranch = 0; currentRootBranch < source.getNodeCount(); currentRootBranch++) {
-            FlexibleTree tmpTree = new FlexibleTree(source.getRoot());
+            FlexibleTree tmpTree = source.copy();
             Node node = tmpTree.getNode(currentRootBranch);
             if (!tmpTree.isRoot(node)) {
-                double length = node.getLength();
                 tmpTree.changeRootTo(node, 0.5);
 
                 double f = findLocalRoot(tmpTree, dates, rootingFunction, forcePositiveRate);
@@ -296,7 +296,7 @@ public class TemporalRooting {
             }
 
             System.out.println("score = " + minF);
-            System.out.println("score = " + tmpTree.toNewick());
+            System.out.println("tree = " + tmpTree.toNewick());
         }
 
         return bestTree;
@@ -314,8 +314,8 @@ public class TemporalRooting {
         Node node1 = tree.getRoot().getChild(0);
         Node node2 = tree.getRoot().getChild(1);
 
-        final double length1 = node1.getLength();
-        final double length2 = node2.getLength();
+        final double length1 = tree.getBranchLength(node1);
+        final double length2 = tree.getBranchLength(node2);
 
         final double sumLength = length1 + length2;
 
@@ -398,6 +398,8 @@ public class TemporalRooting {
         double l1 = x * sumLength;
         double l2 = (1.0 - x) * sumLength;
 
+        System.out.println("x = " + x + ", sumLength = " + sumLength + ", fminx = " + fminx);
+
         tree.setBranchLength(node1, l1);
         tree.setBranchLength(node2, l2);
 
@@ -415,8 +417,8 @@ public class TemporalRooting {
         Node node1 = tree.getRoot().getChild(0);
         Node node2 = tree.getRoot().getChild(1);
 
-        final double length1 = node1.getLength();
-        final double length2 = node2.getLength();
+        final double length1 = tree.getBranchLength(node1);
+        final double length2 = tree.getBranchLength(node2);
 
         final double sumLength = length1 + length2;
 
@@ -484,10 +486,10 @@ public class TemporalRooting {
         return r.getResidualMeanSquared();
     }
 
-    public double getRootToTipDistance(Tree tree, Node node) {
+    public double getRootToTipDistance(FlexibleTree tree, Node node) {
         double distance = 0;
         while (node != null) {
-            distance += node.getLength();
+            distance += tree.getBranchLength(node);
             node = node.getParent();
         }
         return distance;
@@ -502,9 +504,9 @@ public class TemporalRooting {
         return density;
     }
 
-    public Tree adjustTreeToConstraints(Tree source, Map<Set<String>, double[]> cladeHeights) {
+    public Tree adjustTreeToConstraints(FlexibleTree source, Map<Set<String>, double[]> cladeHeights) {
 
-        FlexibleTree tree = new FlexibleTree(source.getRoot());
+        FlexibleTree tree = source.copy();
         setHeightsFromDates(tree);
 
         adjustTreeToConstraints(tree, tree.getRoot(), null, cladeHeights);

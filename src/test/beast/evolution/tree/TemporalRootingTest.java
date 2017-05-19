@@ -28,6 +28,11 @@ public class TemporalRootingTest extends TestCase {
 
     @Override
     public void setUp() throws Exception {
+        TraitSet timeTraitSet = setUpTimeTrait();
+        temporalRooting = new TemporalRooting(timeTraitSet);
+    }
+
+    public static TraitSet setUpTimeTrait() {
         String[] taxa = new String[]{ "A","B","C","D","E" };
         List<Sequence> seqList = new ArrayList<Sequence>();
         for (String taxonID : taxa)
@@ -40,7 +45,7 @@ public class TemporalRootingTest extends TestCase {
                 "traitname", "date",
                 "taxa", taxonSet,
                 "value", "A=2017, B=2017, C=2016, D=2015, E=2012");
-        temporalRooting = new TemporalRooting(timeTraitSet);
+        return timeTraitSet;
     }
 
     public void testRootToTipRegression() {
@@ -54,9 +59,8 @@ public class TemporalRootingTest extends TestCase {
         Variate distances = r.getYData();
 
         System.out.println("date\tdistance");
-        for (int i = 0; i < dates.getCount(); i++) {
+        for (int i = 0; i < dates.getCount(); i++)
             System.out.println(dates.get(i) + "\t" + distances.get(i));
-        }
 
         assertEquals(0.41860, Math.round(r.getGradient() * decimal) / decimal);
         assertEquals(2000.11111, Math.round(r.getXIntercept() * decimal) / decimal);
@@ -65,6 +69,13 @@ public class TemporalRootingTest extends TestCase {
         assertEquals(0.94186, Math.round(r.getRSquared() * decimal) / decimal);
         assertEquals(0.97049, Math.round(r.getCorrelationCoefficient() * decimal) / decimal);
 //        }
+
+        double[] residuals = temporalRooting.getRootToTipResiduals(rootedTree, r);
+        String[] tipLabels = temporalRooting.getTipLabels(rootedTree);
+        for (int i = 0; i < residuals.length; i++)
+            System.out.println(i + " " + tipLabels[i] + " " + residuals[i]);
+
+        assertEquals(-0.06977, Math.round(residuals[0] * decimal) / decimal);
 
     }
 

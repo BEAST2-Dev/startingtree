@@ -1,12 +1,11 @@
 package beast.evolution.tree;
 
 import beast.core.Description;
+import beast.evolution.alignment.TaxonSet;
 import beast.math.statistic.Regression;
 import beast.util.TreeParser;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @Description("Tree can be changed, such as re-root. Imported from BEAST 1 FlexibleTree.")
 public class FlexibleTree extends Tree {
@@ -51,6 +50,8 @@ public class FlexibleTree extends Tree {
         flexibleTree.heightsKnown = this.heightsKnown;
         flexibleTree.lengthsKnown = this.lengthsKnown;
         flexibleTree.allBranchLengths = Arrays.copyOf(this.allBranchLengths, this.allBranchLengths.length);
+        if (hasDateTrait())
+            flexibleTree.setDateTrait(getDateTrait());
         return flexibleTree;
     }
 
@@ -67,6 +68,15 @@ public class FlexibleTree extends Tree {
             calculateBranchLengths();
         int nodeNr = node.getNr();
         return allBranchLengths[nodeNr];
+    }
+
+    public double[] getBranchLengths(List<Node> nodes) {
+        double[] bl = new double[nodes.size()];
+        for (int i = 0; i < nodes.size(); i++) {
+            Node node = nodes.get(i);
+            bl[i] = getBranchLength(node);
+        }
+        return bl;
     }
 
     public void setBranchLength(Node node, double length) {
@@ -300,6 +310,27 @@ public class FlexibleTree extends Tree {
 
 
     //++++++++ Time tree ++++++++
+    private Map<String, Double> dates;
+    private double dateMin;
+    private double dateMax;
+
+    public void setDates(TraitSet timeTraitSet) {
+        TaxonSet taxa = timeTraitSet.taxaInput.get();
+
+        dates = new HashMap<String, Double>();
+//        precisions = new HashMap<String, Double>();
+
+        dateMin = timeTraitSet.minValue;
+        dateMax = timeTraitSet.maxValue;
+
+        for (int i = 0; i < taxa.getTaxonCount(); i++) {
+            String taxon = taxa.getTaxonId(i);
+            // note: timeTraitSet.getValue(taxon) is not the original value
+            double date = Double.parseDouble(timeTraitSet.getStringValue(taxon));
+            dates.put(taxon, date);
+        }
+    }
+
 
     /**
      * Calculate the sum of squared distances of branch length (distance)
@@ -308,6 +339,7 @@ public class FlexibleTree extends Tree {
      * @return the sum of squared residuals
      */
     public double getRSS(double mu) {
+
         if (!lengthsKnown)
             calculateBranchLengths();
         return this.getRSS(getRoot(), mu);
@@ -326,8 +358,8 @@ public class FlexibleTree extends Tree {
             // b_i
             double b = getBranchLength(child);
             // t_i - t_a(i)
-            double t = node.getHeight() - child.getHeight();
-            rss += getRSS(child, mu) + (b - mu*t)*(b - mu*t); // / sigma * sigma
+            double t = child.getDate() - node.getDate(); // todo wrong
+//            rss += getRSS(child, mu) + (b - mu*t)*(b - mu*t) / sigma * sigma;
 //            System.out.println(child.getNr() + " : " + ss + " , " + d);
         }
         return rss;
@@ -338,11 +370,10 @@ public class FlexibleTree extends Tree {
      * @return
      */
     public FlexibleTree getMinRSSTree(double mu) {
+
         final FlexibleTree source = this.copy();
         if (mu <= 0) {
-            if (timeTraitSet == null)
-                throw new IllegalArgumentException("Date trait is required !");
-            TemporalRooting temporalRooting = new TemporalRooting(timeTraitSet);
+            TemporalRooting temporalRooting = new TemporalRooting(getDateTrait());
             Regression r = temporalRooting.getRootToTipRegression(source);
             // todo correct ?
             mu = r.getGradient();

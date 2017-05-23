@@ -62,12 +62,12 @@ public class TemporalRootingTest extends TestCase {
         for (int i = 0; i < dates.getCount(); i++)
             System.out.println(dates.get(i) + "\t" + distances.get(i));
 
-        assertEquals(0.41860, Math.round(r.getGradient() * decimal) / decimal);
-        assertEquals(2000.11111, Math.round(r.getXIntercept() * decimal) / decimal);
-        assertEquals(-837.25581, Math.round(r.getYIntercept() * decimal) / decimal);
-        assertEquals(0.06202, Math.round(r.getResidualMeanSquared() * decimal) / decimal);
-        assertEquals(0.94186, Math.round(r.getRSquared() * decimal) / decimal);
-        assertEquals(0.97049, Math.round(r.getCorrelationCoefficient() * decimal) / decimal);
+        assertEquals(0.41860, r.getGradient(), 1e-5);
+        assertEquals(2000.11111, r.getXIntercept(), 1e-5);
+        assertEquals(-837.25581, r.getYIntercept(), 1e-5);
+        assertEquals(0.06202, r.getResidualMeanSquared(), 1e-5);
+        assertEquals(0.94186, r.getRSquared(), 1e-5);
+        assertEquals(0.97049, r.getCorrelationCoefficient(), 1e-5);
 //        }
 
         double[] residuals = temporalRooting.getRootToTipResiduals(rootedTree, r);
@@ -75,7 +75,7 @@ public class TemporalRootingTest extends TestCase {
         for (int i = 0; i < residuals.length; i++)
             System.out.println(i + " " + tipLabels[i] + " " + residuals[i]);
 
-        assertEquals(-0.06977, Math.round(residuals[0] * decimal) / decimal);
+        assertEquals(-0.06977, residuals[0], 1e-5);
 
     }
 

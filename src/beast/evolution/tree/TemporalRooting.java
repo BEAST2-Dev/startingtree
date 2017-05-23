@@ -130,10 +130,11 @@ public class TemporalRooting {
     }
 
     /**
-     * Root to tip distance vs. time of sampling.
-     * Time is given in <code>TraitSet</code>
+     * The main method to get the regression of
+     * root-to-tip distance vs. time of sampling.
+     * Time is given in <code>TraitSet</code>.
      *
-     * @param tree
+     * @param tree <code>FlexibleTree</code>.
      * @return <code>Regression</code> result.
      */
     public Regression getRootToTipRegression(FlexibleTree tree) {
@@ -302,6 +303,7 @@ public class TemporalRooting {
         return bestTree;
     }
 
+    // todo this code is unchecked
     private double findLocalRoot(final FlexibleTree tree,
                                  final double[] dates,
                                  final RootingFunction rootingFunction,

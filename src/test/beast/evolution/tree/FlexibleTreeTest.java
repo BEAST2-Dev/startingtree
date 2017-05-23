@@ -22,6 +22,7 @@ public class FlexibleTreeTest extends TestCase {
     double decimal = 100000;
     double mu = 0.4;
 
+
     public void testChangeRootTo() throws Exception {
         String tree = binaryTrees[0];
         FlexibleTree flexibleTree = new FlexibleTree(tree);
@@ -51,6 +52,7 @@ public class FlexibleTreeTest extends TestCase {
     public void testRSS() throws Exception {
 
         FlexibleTree flexibleTree = new FlexibleTree(binaryTrees[0]);
+        flexibleTree.setDateTrait(TemporalRootingTest.setUpTimeTrait());
         System.out.println(flexibleTree.toNewick() + "\n");
 
         double ss = flexibleTree.getRSS(mu);
@@ -64,6 +66,7 @@ public class FlexibleTreeTest extends TestCase {
         String minRSSTreeString = "(E:4.0,(((A:1.0,B:1.0):1.0,C:2.0):2.0,D:3.0):4.0):0.0;";
 
         FlexibleTree flexibleTree = new FlexibleTree(binaryTrees[0]);
+        flexibleTree.setDateTrait(TemporalRootingTest.setUpTimeTrait());
         System.out.println(flexibleTree.toNewick() + "\n");
 
         FlexibleTree bestTree = flexibleTree.getMinRSSTree(mu);

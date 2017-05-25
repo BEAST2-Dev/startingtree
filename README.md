@@ -1,2 +1,2 @@
 # startingtree
-nice algorithm to initialize starting trees in BEAST2
+Nice algorithms to initialize starting trees with a temporal structure in BEAST2

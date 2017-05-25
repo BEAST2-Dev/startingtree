@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * binary tree
+ * Linear Dating algorithm without constraints
  */
-@Citation("To et al 2015, 'Fast dating using least-squares criteria and algorithms', Systematic Biology")
+@Citation("To et al 2016, 'Fast dating using least-squares criteria and algorithms', Systematic Biology")
 @Description("Linear dating without constraints")
 public class LinearDating {
 
@@ -22,14 +22,13 @@ public class LinearDating {
 
     private final FlexibleTree flexibleTree; // do not change the tree in this class
 
-    private final Map<Node, WLS> wlsMap;
+    private final Map<Node, WLS> wlsMap; // root or internal nodes
 
     private final int s; // sequence length
     private double c = 10; // recommended in paper
 
     // output
     private double omega;
-    private double[] time;
 
     public LinearDating(FlexibleTree flexibleTree, TraitSet timeTraitSet, final int s, final double minOmega) {
         this.flexibleTree = flexibleTree;
@@ -69,7 +68,21 @@ public class LinearDating {
         this.c = c;
     }
 
-    public void analyse(final double c, final int s, final double minOmega) {
+    /**
+     * Start the Linear Dating algorithm.
+     * <ol>
+     * <li>post-order of internal nodes to deduce x, y, z;</li>
+     * <li>pre-order of internal nodes to deduce u, v;</li>
+     * <li>compute omega that minimize WLS;</li>
+     * <li>if &omega; < &omega;_min then &omega; = &omega;_min;</li>
+     * <li>compute t(1, ..., n-1).</li>
+     * </ol>
+     *
+     * @param c a constant in eq.4, 10 is recommended in paper
+     * @param s sequence length
+     * @param omegaMin &omega;_min where to fix the min of the estimated rate &omega;>= &omega;_min > 0
+     */
+    public void analyse(final double c, final int s, final double omegaMin) {
         // deduce x, y, z
         Node root = flexibleTree.getRoot();
         List<Node> children = root.getChildren();
@@ -89,12 +102,30 @@ public class LinearDating {
         // compute omega that minimize WLS
         omega = computeOmega();
 
-        // omega not lower than minOmega
-        if (omega < minOmega)
-            omega = minOmega;
+        // omega not lower than omegaMin
+        if (omega < omegaMin)
+            omega = omegaMin;
 
         // compute t(1, ..., n-1)
-        time = computeT(omega);
+        computeT(omega);
+    }
+
+    public double getOmega() {
+        return omega;
+    }
+
+    /**
+     * get time given the root or an internal node in the final result
+     *
+     * @param node the root or an internal node
+     * @return
+     */
+    public double getTime(Node node) {
+        WLS nodeWLS = wlsMap.get(node);
+        if (nodeWLS == null)
+            throw new RuntimeException("WLS for internal node " + node.getID() + " is not calculated !");
+
+        return nodeWLS.getT();
     }
 
     private double getTipDate(Node tip) {
@@ -151,17 +182,14 @@ public class LinearDating {
         return omega;
     }
 
-    private double[] computeT(final double omega) {
-        List<Node> internalNodes = flexibleTree.getInternalNodes();
-        double[] time = new double[internalNodes.size()];
-        for (int i = 0; i < internalNodes.size(); i++) {
-            Node node = internalNodes.get(i); // include root
+    // nodeWLS.setT(t)
+    private void computeT(final double omega) {
+        for (Node node : flexibleTree.getInternalNodes()) { // include root
             WLS nodeWLS = wlsMap.get(node);
             if (nodeWLS == null)
                 throw new RuntimeException("WLS for internal node " + node.getID() + " is not calculated !");
-            double t = nodeWLS.getT(omega);
-            time[i] =t;
+            double t = nodeWLS.getTime(omega);
+            nodeWLS.setT(t);
         }
-        return time;
     }
 }

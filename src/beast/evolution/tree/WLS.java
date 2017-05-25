@@ -21,6 +21,8 @@ public class WLS {
     private double ua;
     private double va;
 
+    private double t; // the final result, time of internal node
+
     // root, w=0, b=0
     WLS(Node root, double[] bs, final double c, final int s) {
         this(root, 0, bs, c, s);
@@ -81,7 +83,7 @@ public class WLS {
     }
 
     // date of internal node calculated by eq.7
-    public double getT(double omega) {
+    public double getTime(double omega) {
         return u + v / omega;
     }
 
@@ -166,4 +168,21 @@ public class WLS {
         return getX() * va + getZ();
     }
 
+    /**
+     * the time of internal node
+     *
+     * @return
+     */
+    public double getT() {
+        return t;
+    }
+
+    /**
+     * set time in the end of {@link LinearDating#analyse(double, int, double) analyse}
+     *
+     * @param t
+     */
+    public void setT(double t) {
+        this.t = t;
+    }
 }

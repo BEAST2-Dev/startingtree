@@ -15,6 +15,8 @@ public class FlexibleTree extends Tree {
 
     // Tree class does not support setBranchLength(), use double[];
     // index is Nr, the length is from node Nr to its parent, the length of the root is 0.
+    // For unrooted tree, ignore root, and the actual branch length
+    // between its two children r_1 and r_2 is allBranchLengths[Nr(r_1)] + allBranchLengths[Nr(r_2)].
     protected double[] allBranchLengths = new double[getNodeCount()];
 
 
@@ -309,7 +311,7 @@ public class FlexibleTree extends Tree {
 
 
 
-    //++++++++ Time tree ++++++++
+    //++++++++ Time tree ++++++++ // todo incorrect ?
     private Map<String, Double> dates;
     private double dateMin;
     private double dateMax;

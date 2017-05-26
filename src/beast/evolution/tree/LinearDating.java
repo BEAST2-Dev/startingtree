@@ -22,7 +22,7 @@ public class LinearDating {
 
     private final FlexibleTree flexibleTree; // do not change the tree in this class
 
-    private final Map<Node, WLS> wlsMap; // root or internal nodes
+    private final Map<Node, LS> lsMap; // root or internal nodes
 
     private final int s; // sequence length
     private double c = 10; // recommended in paper
@@ -38,9 +38,9 @@ public class LinearDating {
 //        precisions = new HashMap<>();
         setDates(timeTraitSet);
 
-        wlsMap = new HashMap<>();
+        lsMap = new HashMap<>();
 
-        analyse(c, s, minOmega);
+        analyseRootedTree(c, s, minOmega);
     }
 
     private void setDates(TraitSet timeTraitSet) {
@@ -73,7 +73,7 @@ public class LinearDating {
      * <ol>
      * <li>post-order of internal nodes to deduce x, y, z;</li>
      * <li>pre-order of internal nodes to deduce u, v;</li>
-     * <li>compute omega that minimize WLS;</li>
+     * <li>compute omega that minimize WLSRooted;</li>
      * <li>if &omega; < &omega;_min then &omega; = &omega;_min;</li>
      * <li>compute t(1, ..., n-1).</li>
      * </ol>
@@ -82,24 +82,24 @@ public class LinearDating {
      * @param s sequence length
      * @param omegaMin &omega;_min where to fix the min of the estimated rate &omega;>= &omega;_min > 0
      */
-    public void analyse(final double c, final int s, final double omegaMin) {
+    public void analyseRootedTree(final double c, final int s, final double omegaMin) {
         // deduce x, y, z
         Node root = flexibleTree.getRoot();
         List<Node> children = root.getChildren();
         double[] bs = flexibleTree.getBranchLengths(children);
-        WLS rootWLS = new WLS(root, bs, c, s);
-        deduceXYZ(root, rootWLS);
+        WLSRooted rootWLSRooted = new WLSRooted(root, bs, c, s);
+        deduceXYZ(root, rootWLSRooted);
 
         // deduce u, v
-        rootWLS = wlsMap.get(root);
+        rootWLSRooted = (WLSRooted) lsMap.get(root);
         // u(root) = x * 0 + y(root), where set w(root) = b(root) = 0
-        double u = rootWLS.getY();
-        double v = rootWLS.getZ();
+        double u = rootWLSRooted.getY();
+        double v = rootWLSRooted.getZ();
         for (Node child : root.getChildren()) {
             deduceUV(child, u, v);
         }
 
-        // compute omega that minimize WLS
+        // compute omega that minimize WLSRooted
         omega = computeOmega();
 
         // omega not lower than omegaMin
@@ -121,11 +121,11 @@ public class LinearDating {
      * @return
      */
     public double getTime(Node node) {
-        WLS nodeWLS = wlsMap.get(node);
-        if (nodeWLS == null)
-            throw new RuntimeException("WLS for internal node " + node.getID() + " is not calculated !");
+        LS nodeWLSRooted = lsMap.get(node);
+        if (nodeWLSRooted == null)
+            throw new RuntimeException("WLSRooted for internal node " + node.getID() + " is not calculated !");
 
-        return nodeWLS.getT();
+        return nodeWLSRooted.getT();
     }
 
     private double getTipDate(Node tip) {
@@ -136,35 +136,35 @@ public class LinearDating {
         return date;
     }
 
-    private void deduceXYZ(Node node, WLS nodeWLS) {
+    private void deduceXYZ(Node node, WLSRooted nodeWLSRooted) {
         List<Node> children = node.getChildren();
         for (int n = 0; n < children.size(); n++) {
             Node child = children.get(n);
             if (child.isLeaf()) {
                 double ts = getTipDate(node);
-                nodeWLS.setTS(n, ts);
+                nodeWLSRooted.setTS(n, ts);
             } else {
                 List<Node> grandChildren = child.getChildren();
                 double b = flexibleTree.getBranchLength(child);
                 double[] bs = flexibleTree.getBranchLengths(grandChildren);
-                WLS childWLS = new WLS(child, b, bs, c, s);
-                deduceXYZ(child, childWLS);
+                WLSRooted childWLSRooted = new WLSRooted(child, b, bs, c, s);
+                deduceXYZ(child, childWLSRooted);
             }
         }
-        nodeWLS.calculateXYZ();
-        wlsMap.put(node, nodeWLS);
+        nodeWLSRooted.calculateXYZ();
+        lsMap.put(node, nodeWLSRooted);
     }
 
     private void deduceUV(Node node, double ua, double va) {
         if (!node.isLeaf()) {
-            WLS nodeWLS = wlsMap.get(node);
-            if (nodeWLS == null)
+            LS nodeWLSRooted = lsMap.get(node);
+            if (nodeWLSRooted == null)
                 throw new IllegalArgumentException("Cannot find x, y, z for node : " + node.getID());
 
-            nodeWLS.calculateUV(ua, va);
+            nodeWLSRooted.calculateUV(ua, va);
 
             for (Node child : node.getChildren()) {
-                deduceUV(child, nodeWLS.getU(), nodeWLS.getV());
+                deduceUV(child, nodeWLSRooted.getU(), nodeWLSRooted.getV());
             }
         }
     }
@@ -172,12 +172,12 @@ public class LinearDating {
     private double computeOmega() {
         double omega = Double.MAX_VALUE;
         for (Node node : flexibleTree.getInternalNodes()) { // include root
-            WLS nodeWLS = wlsMap.get(node);
-            if (nodeWLS == null)
-                throw new RuntimeException("WLS for internal node " + node.getID() + " is not calculated !");
-            double residual = nodeWLS.getResidual();
-            if (omega > residual)
-                omega = residual;
+            LS nodeWLSRooted = lsMap.get(node);
+            if (nodeWLSRooted == null)
+                throw new RuntimeException("WLSRooted for internal node " + node.getID() + " is not calculated !");
+            double omegaN = nodeWLSRooted.getOmegaNew();
+            if (omega > omegaN)
+                omega = omegaN;
         }
         return omega;
     }
@@ -185,11 +185,18 @@ public class LinearDating {
     // nodeWLS.setT(t)
     private void computeT(final double omega) {
         for (Node node : flexibleTree.getInternalNodes()) { // include root
-            WLS nodeWLS = wlsMap.get(node);
-            if (nodeWLS == null)
-                throw new RuntimeException("WLS for internal node " + node.getID() + " is not calculated !");
-            double t = nodeWLS.getTime(omega);
-            nodeWLS.setT(t);
+            LS nodeWLSRooted = lsMap.get(node);
+            if (nodeWLSRooted == null)
+                throw new RuntimeException("WLSRooted for internal node " + node.getID() + " is not calculated !");
+            double t = nodeWLSRooted.getTime(omega);
+            nodeWLSRooted.setT(t);
         }
+    }
+
+    // Note: do not use weights (variances) in the objective function eq.9,
+    // since weights depend on their associated branch length,
+    // which are unknown for the two branches containing the assumed root.
+    public void estimateRoot(final double c, final int s, final double omegaMin) {
+
     }
 }
